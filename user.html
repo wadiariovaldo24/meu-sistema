@@ -1,0 +1,319 @@
+<script>
+  const user = JSON.parse(localStorage.getItem("usuarioLogado"));
+
+  if (!user || user.role !== "user") {
+    alert("Acesso negado");
+    window.location.href = "index.html";
+  }
+</script>
+
+<!DOCTYPE html>
+
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Aviator Inteligente PRO</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: radial-gradient(circle at top, #0f172a, #020617);
+  color: white;
+}
+
+.plane {
+  position: absolute;
+  font-size: 22px;
+  animation: fly 12s linear infinite;
+  opacity: 0.5;
+}
+
+@keyframes fly {
+  0% { transform: translateX(-100px); }
+  100% { transform: translateX(110vw); }
+}
+
+@keyframes blink {
+  0% { opacity: 1; box-shadow: 0 0 10px gold; }
+  50% { opacity: 0.2; box-shadow: 0 0 25px gold; }
+  100% { opacity: 1; box-shadow: 0 0 10px gold; }
+}
+
+.blink {
+  animation: blink 0.8s infinite;
+  background: gold !important;
+  color: black !important;
+  font-weight: bold;
+}
+
+.container {
+  text-align: center;
+  padding: 20px;
+}
+
+.card {
+  background: rgba(255,255,255,0.05);
+  padding: 20px;
+  border-radius: 12px;
+  width: 95%;
+  max-width: 900px;
+  margin: auto;
+  backdrop-filter: blur(10px);
+}
+
+button {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(45deg, #ff2e2e, #ff6b6b);
+  color: white;
+  cursor: pointer;
+}
+
+.tabelas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  margin-top: 20px;
+}
+
+.tabela {
+  background: rgba(255,255,255,0.05);
+  margin: 10px;
+  padding: 15px;
+  border-radius: 10px;
+  width: 260px;
+  box-shadow: 0 0 15px rgba(255,0,0,0.2);
+}
+
+.vela {
+  display: inline-block;
+  margin: 3px;
+  padding: 6px;
+  border-radius: 5px;
+  font-size: 11px;
+}
+
+.green { background: #00ff88; color: black; }
+.red { background: #ff3b3b; }
+
+h3 { margin: 5px 0; }
+
+#tempo { margin-top: 10px; }
+</style>
+
+</head>
+
+<body>
+
+<div class="plane" style="top:20%">✈️</div>
+<div class="plane" style="top:60%; animation-delay:4s;">✈️</div>
+
+<div class="container">
+<div class="card">
+
+<h2>AVIATOR INTELIGENTE PRO</h2>
+
+<input type="file" id="upload">
+<br><br>
+
+<button onclick="iniciar()">Analisar Print</button>
+
+<h3 id="tempo">Tempo: 9:00</h3>
+<h3 id="tipoDetectado"></h3>
+
+<div class="tabelas" id="tabelas"></div>
+
+</div>
+</div>
+
+<script>
+
+let tempo = 540;
+let intervalo;
+
+// 🔍 ANALISAR CORES
+function analisarCores(img) {
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = img.width;
+  canvas.height = img.height;
+  ctx.drawImage(img,0,0);
+
+  const data = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+
+  let azul=0, roxo=0, rosa=0, verde=0;
+
+  for(let i=0;i<data.length;i+=4){
+    let r=data[i], g=data[i+1], b=data[i+2];
+
+    if(b>r && b>g) azul++;
+    else if(r>g && b>g) roxo++;
+    else if(r>200 && g<100 && b<100) rosa++;
+    else if(g>r && g>b) verde++;
+  }
+
+  let total = azul+roxo+rosa+verde;
+
+  return {
+    azul: azul/total,
+    roxo: roxo/total,
+    rosa: rosa/total,
+    verde: verde/total
+  };
+}
+
+// CLASSIFICAR
+function classificar(cor){
+  if(cor.verde>0.4) return "extrema";
+  if(cor.rosa>0.4) return "alta";
+  if(cor.roxo>0.4) return "media";
+  return "baixa";
+}
+
+// 🔥 COMPARAR COM BASE DO ADMIN
+function encontrarPadrao(corUser){
+  let base = JSON.parse(localStorage.getItem("base")) || [];
+
+  if(base.length === 0){
+    return { tipo: "aleatorio" };
+  }
+
+  let melhor = null;
+  let menorDiff = Infinity;
+
+  base.forEach(item=>{
+    let diff =
+      Math.abs(item.cores.azul - corUser.azul) +
+      Math.abs(item.cores.roxo - corUser.roxo) +
+      Math.abs(item.cores.rosa - corUser.rosa) +
+      Math.abs(item.cores.verde - corUser.verde);
+
+    if(diff < menorDiff){
+      menorDiff = diff;
+      melhor = item;
+    }
+  });
+
+  return melhor;
+}
+
+// 🚀 INICIAR
+function iniciar() {
+
+  const file = upload.files[0];
+
+  if (!file) return alert("Envie o print!");
+
+  const reader = new FileReader();
+
+  reader.onload = function(e){
+    const img = new Image();
+
+    img.onload = function(){
+
+      const corUser = analisarCores(img);
+      const match = encontrarPadrao(corUser);
+
+      let tipo = match.tipo || classificar(corUser);
+
+      tipoDetectado.innerText = "Padrão detectado: " + tipo.toUpperCase();
+
+      gerarTabelas(tipo);
+
+      clearInterval(intervalo);
+
+      intervalo = setInterval(atualizarTempo,1000);
+    }
+
+    img.src = e.target.result;
+  }
+
+  reader.readAsDataURL(file);
+}
+
+// 🎯 GERAR CENÁRIOS BASEADOS NO TIPO
+function gerarTabelas(tipo) {
+
+  const container = document.getElementById("tabelas");
+  container.innerHTML = "";
+
+  for (let t = 1; t <= 3; t++) {
+
+    let plano = [];
+
+    for (let i = 0; i < 15; i++) {
+
+      let valor;
+
+      if(tipo === "extrema"){
+        valor = (5 + Math.random()*40);
+      }
+      else if(tipo === "alta"){
+        valor = (3 + Math.random()*20);
+      }
+      else if(tipo === "media"){
+        valor = (1.5 + Math.random()*8);
+      }
+      else{
+        valor = (1 + Math.random()*3);
+      }
+
+      plano.push(valor.toFixed(2));
+    }
+
+    let boas = plano.filter(v => v >= 1.75).length;
+    let entrada = (boas / 15) * 100;
+    let risco = 100 - entrada;
+
+    let div = document.createElement("div");
+    div.className = "tabela";
+
+    let html = `
+      <h3>Cenário ${t}</h3>
+      <p>Entrada: ${entrada.toFixed(0)}%</p>
+      <p>Risco: ${risco.toFixed(0)}%</p>
+      <div>
+    `;
+
+    plano.forEach(v => {
+
+      let valor = parseFloat(v);
+      let classe = valor >= 1.75 ? "green" : "red";
+
+      if (valor >= 10) {
+        classe += " blink";
+      }
+
+      html += `<span class="vela ${classe}">${v}x</span>`;
+    });
+
+    html += `</div>`;
+    div.innerHTML = html;
+    container.appendChild(div);
+  }
+}
+
+// ⏱️ TEMPO
+function atualizarTempo() {
+
+  tempo--;
+
+  let min = Math.floor(tempo / 60);
+  let seg = tempo % 60;
+
+  tempo.innerText = `Tempo: ${min}:${seg<10?'0':''}${seg}`;
+
+  if (tempo <= 0) {
+    clearInterval(intervalo);
+    alert("Nova análise necessária!");
+    tempo = 540;
+  }
+}
+
+</script>
+
+</body>
+</html>
