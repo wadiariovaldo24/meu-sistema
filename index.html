@@ -24,61 +24,31 @@
       text-align: center;
       box-shadow: 0 0 25px rgba(255, 0, 0, 0.4);
       border: 1px solid rgba(255, 0, 0, 0.3);
-      animation: fadeIn 1s ease;
-    }
-
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
     }
 
     h2 {
       margin-bottom: 20px;
       color: #ff2e2e;
-      letter-spacing: 1px;
     }
 
     input {
       width: 100%;
       padding: 12px;
       margin: 12px 0;
-      border: none;
       border-radius: 8px;
-      outline: none;
-      font-size: 14px;
       background: #111;
       color: white;
       border: 1px solid #333;
-      transition: 0.3s;
-    }
-
-    input:focus {
-      border: 1px solid #ff2e2e;
-      box-shadow: 0 0 8px rgba(255, 0, 0, 0.6);
     }
 
     button {
       width: 100%;
       padding: 12px;
       margin-top: 12px;
-      border: none;
       border-radius: 8px;
-      background: linear-gradient(45deg, #ff0000, #ff4d4d);
+      background: #ff0000;
       color: white;
-      font-size: 15px;
       cursor: pointer;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      transform: scale(1.05);
-      box-shadow: 0 0 15px rgba(255, 0, 0, 0.6);
     }
 
     .admin-btn {
@@ -87,31 +57,13 @@
       margin-top: 15px;
       border: none;
       cursor: pointer;
-      font-size: 13px;
     }
-
-    .admin-btn:hover {
-      text-decoration: underline;
-      color: #38bdf8;
-    }
-
-    .logo {
-      font-size: 22px;
-      font-weight: bold;
-      margin-bottom: 15px;
-      color: #ff2e2e;
-      text-shadow: 0 0 10px rgba(255,0,0,0.7);
-    }
-
   </style>
 </head>
 
 <body>
 
 <div class="login-box">
-
-  <div class="logo">AVIATOR SIGNAL</div>
-
   <h2>Entrar</h2>
 
   <input type="text" id="login" placeholder="Email ou Telefone">
@@ -122,46 +74,47 @@
   <button class="admin-btn" onclick="contactarAdmin()">
     Contactar Admin
   </button>
-
 </div>
 
 <script>
 
-  const usuarios = [
-    { login: "wadiariovaldo24@gmail.com", senha: "!!Joice2424", role: "admin" },
-    { login: "Inock", senha: "1234", role: "user" }
-  ];
+const usuarios = [
+  { login: "wadiariovaldo24@gmail.com", senha: "!!Joice2424", role: "admin" },
+  { login: "Inock", senha: "1234", role: "user" }
+];
 
-  function entrar() {
-    const login = document.getElementById("login").value.trim();
-    const senha = document.getElementById("senha").value.trim();
+function entrar() {
+  const login = document.getElementById("login").value.trim();
+  const senha = document.getElementById("senha").value.trim();
 
-    // validação completa
-    const user = usuarios.find(u => u.login === login && u.senha === senha);
+  const user = usuarios.find(u => 
+    u.login === login && u.senha === senha
+  );
 
-    if (!user) {
-      alert("Login ou senha incorretos");
-      return;
-    }
-
-    // salvar sessão
-    localStorage.setItem("usuarioLogado", JSON.stringify(user));
-
-    // redirecionar
-    if (user.role === "admin") {
-      window.location.href = "admin.html";
-    } else {
-      window.location.href = "user.html";
-    }
+  if (!user) {
+    alert("Login ou senha incorretos");
+    return;
   }
 
-  function contactarAdmin() {
-    const numero = "953200373";
-    const mensagem = "Olá, quero me cadastrar na plataforma";
+  // salva sessão
+  localStorage.setItem("usuarioLogado", JSON.stringify(user));
 
-    const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
-    window.open(url, "_blank");
+  console.log("LOGADO:", user); // DEBUG
+
+  // REDIRECIONAMENTO SEGURO
+  if (user.role.toLowerCase() === "admin") {
+    window.location.href = "./admin.html";
+  } else {
+    window.location.href = "./user.html";
   }
+}
+
+function contactarAdmin() {
+  const numero = "953200373";
+  const mensagem = "Olá, quero me cadastrar na plataforma";
+  const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
+  window.open(url, "_blank");
+}
 
 </script>
 
