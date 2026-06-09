@@ -115,7 +115,6 @@
   <h2>Entrar</h2>
 
   <input type="text" id="login" placeholder="Email ou Telefone">
-
   <input type="password" id="senha" placeholder="Senha">
 
   <button onclick="entrar()">Entrar</button>
@@ -123,44 +122,44 @@
   <button class="admin-btn" onclick="contactarAdmin()">
     Contactar Admin
   </button>
+
 </div>
 
 <script>
 
   const usuarios = [
-    { login: "wadiariovaldo24@gmail.com", senha: "!!Joice2424", role: "Admin" },
+    { login: "wadiariovaldo24@gmail.com", senha: "!!Joice2424", role: "admin" },
     { login: "Inock", senha: "1234", role: "user" }
   ];
 
   function entrar() {
-    const login = document.getElementById("login").value;
-    const senha = document.getElementById("senha").value;
+    const login = document.getElementById("login").value.trim();
+    const senha = document.getElementById("senha").value.trim();
 
-    const user = usuarios.find(u => u.login === login);
+    // validação completa
+    const user = usuarios.find(u => u.login === login && u.senha === senha);
 
     if (!user) {
-      alert("Usuário não encontrado");
+      alert("Login ou senha incorretos");
       return;
     }
 
-    if (user.senha !== senha) {
-      alert("Senha incorreta");
-      return;
-    }
+    // salvar sessão
+    localStorage.setItem("usuarioLogado", JSON.stringify(user));
 
-    if (user.role === "Admin") {
-  window.location.href = "admin.html";
-} else {
-  window.location.href = "user.html";
-}
+    // redirecionar
+    if (user.role === "admin") {
+      window.location.href = "admin.html";
+    } else {
+      window.location.href = "user.html";
+    }
   }
 
   function contactarAdmin() {
-    const numero = "953200373"; // 🔥 teu número
+    const numero = "953200373";
     const mensagem = "Olá, quero me cadastrar na plataforma";
 
     const url = `https://wa.me/${numero}?text=${encodeURIComponent(mensagem)}`;
-
     window.open(url, "_blank");
   }
 
