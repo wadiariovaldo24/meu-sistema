@@ -1,0 +1,292 @@
+<script>
+  const user = JSON.parse(localStorage.getItem("usuarioLogado"));
+
+  if (!user || user.role !== "admin") {
+    alert("Acesso negado");
+    window.location.href = "index.html";
+  }
+</script>
+
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<title>Painel Admin</title>
+
+<style>
+body {
+  margin: 0;
+  font-family: Arial;
+  background: #0a0a0a;
+  color: white;
+}
+
+.sidebar {
+  width: 220px;
+  height: 100vh;
+  background: #111;
+  position: fixed;
+  padding-top: 20px;
+  border-right: 1px solid #222;
+}
+
+.sidebar h2 {
+  text-align: center;
+  color: #ff2e2e;
+}
+
+.sidebar button {
+  width: 90%;
+  margin: 10px;
+  padding: 10px;
+  background: none;
+  border: 1px solid #333;
+  color: white;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.main {
+  margin-left: 230px;
+  padding: 20px;
+}
+
+.card {
+  background: #111;
+  padding: 20px;
+  border-radius: 10px;
+  margin-bottom: 20px;
+}
+
+input {
+  padding: 10px;
+  margin: 5px;
+  border-radius: 5px;
+  border: none;
+}
+
+button.action {
+  background: #ff2e2e;
+  border: none;
+  padding: 10px;
+  color: white;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+/* LOGIN */
+#loginScreen {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  background: #0a0a0a;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.loginBox {
+  background: #111;
+  padding: 30px;
+  border-radius: 10px;
+  text-align: center;
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="loginBox">
+    <h2>🔐 Login</h2>
+    <input type="text" id="loginUser" placeholder="Login"><br>
+    <input type="password" id="loginPass" placeholder="Senha"><br>
+    <button class="action" onclick="login()">Entrar</button>
+  </div>
+</div>
+
+<!-- MENU -->
+<div class="sidebar">
+  <h2>ADMIN</h2>
+
+  <button onclick="mostrar('dashboard')">Dashboard</button>
+  <button onclick="mostrar('usuarios')">Usuários</button>
+  <button onclick="mostrar('prints')">Prints</button>
+  <button onclick="toggleSistema()">Ativar/Desativar</button>
+  <button onclick="logout()">Sair</button>
+</div>
+
+<!-- CONTEÚDO -->
+<div class="main">
+
+<div id="dashboard" class="card">
+  <h2>📊 Painel</h2>
+  <p>Status: <span id="statusSistema">🔴 Desligado</span></p>
+  <p>Total de usuários: <span id="totalUsers">0</span></p>
+  <p>Total de prints: <span id="totalPrints">0</span></p>
+</div>
+
+<div id="usuarios" class="card" style="display:none;">
+  <h2>👤 Criar Usuário</h2>
+
+  <input type="text" id="novoLogin" placeholder="Email ou telefone">
+  <input type="password" id="novaSenha" placeholder="Senha">
+
+  <button class="action" onclick="criarUsuario()">Criar</button>
+</div>
+
+<div id="prints" class="card" style="display:none;">
+  <h2>🖼️ Upload + Análise</h2>
+
+  <input type="file" id="uploadPrint">
+  <button class="action" onclick="enviarPrint()">Analisar</button>
+
+  <p id="msgPrint"></p>
+  <p id="resultadoAnalise"></p>
+</div>
+
+</div>
+
+<script>
+
+// BASE
+let usuarios = JSON.parse(localStorage.getItem("usuarios")) || [
+  { login: "admin", senha: "1234" }
+];
+
+let sistemaAtivo = false;
+let base = JSON.parse(localStorage.getItem("base")) || [];
+
+// LOGIN
+function login(){
+  let user = loginUser.value;
+  let pass = loginPass.value;
+
+  let existe = usuarios.find(u => u.login === user && u.senha === pass);
+
+  if(existe){
+    localStorage.setItem("logado", user);
+    loginScreen.style.display = "none";
+  } else {
+    alert("Login inválido");
+  }
+}
+
+// LOGOUT
+function logout(){
+  localStorage.removeItem("logado");
+  location.reload();
+}
+
+// BLOQUEIO
+if(localStorage.getItem("logado")){
+  loginScreen.style.display = "none";
+}
+
+// NAVEGAÇÃO
+function mostrar(secao){
+  ["dashboard","usuarios","prints"].forEach(id=>{
+    document.getElementById(id).style.display="none";
+  });
+  document.getElementById(secao).style.display="block";
+}
+
+// CRIAR USUÁRIO
+function criarUsuario(){
+  let login = novoLogin.value;
+  let senha = novaSenha.value;
+
+  if(!login || !senha) return alert("Preencha tudo");
+
+  usuarios.push({ login, senha });
+  localStorage.setItem("usuarios", JSON.stringify(usuarios));
+
+  totalUsers.innerText = usuarios.length;
+  alert("Usuário criado!");
+}
+
+// SISTEMA
+function toggleSistema(){
+  sistemaAtivo = !sistemaAtivo;
+  statusSistema.innerText = sistemaAtivo ? "🟢 Ativo" : "🔴 Desligado";
+}
+
+// ANALISAR CORES
+function analisarCores(img){
+  const canvas = document.createElement("canvas");
+  const ctx = canvas.getContext("2d");
+
+  canvas.width = img.width;
+  canvas.height = img.height;
+  ctx.drawImage(img,0,0);
+
+  const data = ctx.getImageData(0,0,canvas.width,canvas.height).data;
+
+  let azul=0, roxo=0, rosa=0, verde=0;
+
+  for(let i=0;i<data.length;i+=4){
+    let r=data[i], g=data[i+1], b=data[i+2];
+
+    if(b>r && b>g) azul++;
+    else if(r>g && b>g) roxo++;
+    else if(r>200 && g<100 && b<100) rosa++;
+    else if(g>r && g>b) verde++;
+  }
+
+  let total = azul+roxo+rosa+verde;
+
+  return {
+    azul: azul/total,
+    roxo: roxo/total,
+    rosa: rosa/total,
+    verde: verde/total
+  };
+}
+
+// CLASSIFICAR
+function classificar(cor){
+  if(cor.verde>0.4) return "extrema";
+  if(cor.rosa>0.4) return "alta";
+  if(cor.roxo>0.4) return "media";
+  return "baixa";
+}
+
+// UPLOAD
+function enviarPrint(){
+  let file = uploadPrint.files[0];
+  if(!file) return alert("Seleciona imagem");
+
+  let reader = new FileReader();
+
+  reader.onload = function(e){
+    let img = new Image();
+
+    img.onload = function(){
+      let cor = analisarCores(img);
+      let tipo = classificar(cor);
+
+      base.push({ tipo, cores: cor });
+      localStorage.setItem("base", JSON.stringify(base));
+
+      msgPrint.innerText = "Guardado!";
+      resultadoAnalise.innerText = "Tipo: " + tipo;
+
+      totalPrints.innerText = base.length;
+    }
+
+    img.src = e.target.result;
+  }
+
+  reader.readAsDataURL(file);
+}
+
+// INIT
+totalUsers.innerText = usuarios.length;
+totalPrints.innerText = base.length;
+
+</script>
+
+</body>
+</html>
