@@ -8,7 +8,6 @@
 </script>
 
 <!DOCTYPE html>
-
 <html lang="pt">
 <head>
 <meta charset="UTF-8">
@@ -35,14 +34,13 @@ body {
 }
 
 @keyframes blink {
-  0% { opacity: 1; box-shadow: 0 0 10px gold; }
-  50% { opacity: 0.2; box-shadow: 0 0 25px gold; }
-  100% { opacity: 1; box-shadow: 0 0 10px gold; }
+  0% { opacity: 1; background: white; }
+  50% { opacity: 0.3; background: #ccc; }
+  100% { opacity: 1; background: white; }
 }
 
 .blink {
   animation: blink 0.8s infinite;
-  background: gold !important;
   color: black !important;
   font-weight: bold;
 }
@@ -71,6 +69,19 @@ button {
   cursor: pointer;
 }
 
+/* BOTÃO SAIR */
+.logout {
+  background: #111;
+  color: #ff4d4d;
+  border: 1px solid #ff2e2e;
+  margin-bottom: 15px;
+}
+
+.logout:hover {
+  background: #ff2e2e;
+  color: white;
+}
+
 .tabelas {
   display: flex;
   flex-wrap: wrap;
@@ -95,12 +106,14 @@ button {
   font-size: 11px;
 }
 
-.green { background: #00ff88; color: black; }
-.red { background: #ff3b3b; }
+.red {
+  background: linear-gradient(45deg, #ff0000, #990000);
+  color: black;
+  font-weight: bold;
+  box-shadow: 0 0 8px rgba(255,0,0,0.7);
+}
 
 h3 { margin: 5px 0; }
-
-#tempo { margin-top: 10px; }
 </style>
 
 </head>
@@ -115,12 +128,15 @@ h3 { margin: 5px 0; }
 
 <h2>AVIATOR INTELIGENTE PRO</h2>
 
+<!-- 🔥 BOTÃO SAIR -->
+<button class="logout" onclick="sair()">Sair</button>
+
 <input type="file" id="upload">
 <br><br>
 
 <button onclick="iniciar()">Analisar Print</button>
 
-<h3 id="tempo">Tempo: 9:00</h3>
+<h3 id="tempoTexto">Tempo: 9:00</h3>
 <h3 id="tipoDetectado"></h3>
 
 <div class="tabelas" id="tabelas"></div>
@@ -133,7 +149,13 @@ h3 { margin: 5px 0; }
 let tempo = 540;
 let intervalo;
 
-// 🔍 ANALISAR CORES
+// 🔥 FUNÇÃO SAIR
+function sair() {
+  localStorage.removeItem("usuarioLogado");
+  window.location.href = "index.html";
+}
+
+// ANALISAR CORES
 function analisarCores(img) {
   const canvas = document.createElement("canvas");
   const ctx = canvas.getContext("2d");
@@ -173,7 +195,7 @@ function classificar(cor){
   return "baixa";
 }
 
-// 🔥 COMPARAR COM BASE DO ADMIN
+// BASE ADMIN
 function encontrarPadrao(corUser){
   let base = JSON.parse(localStorage.getItem("base")) || [];
 
@@ -200,11 +222,10 @@ function encontrarPadrao(corUser){
   return melhor;
 }
 
-// 🚀 INICIAR
+// INICIAR
 function iniciar() {
 
   const file = upload.files[0];
-
   if (!file) return alert("Envie o print!");
 
   const reader = new FileReader();
@@ -224,7 +245,6 @@ function iniciar() {
       gerarTabelas(tipo);
 
       clearInterval(intervalo);
-
       intervalo = setInterval(atualizarTempo,1000);
     }
 
@@ -234,7 +254,7 @@ function iniciar() {
   reader.readAsDataURL(file);
 }
 
-// 🎯 GERAR CENÁRIOS BASEADOS NO TIPO
+// GERAR TABELAS
 function gerarTabelas(tipo) {
 
   const container = document.getElementById("tabelas");
@@ -244,25 +264,30 @@ function gerarTabelas(tipo) {
 
     let plano = [];
 
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 13; i++) {
 
       let valor;
 
       if(tipo === "extrema"){
-        valor = (5 + Math.random()*40);
+        valor = (5 + Math.random()*20);
       }
       else if(tipo === "alta"){
-        valor = (3 + Math.random()*20);
+        valor = (3 + Math.random()*10);
       }
       else if(tipo === "media"){
-        valor = (1.5 + Math.random()*8);
+        valor = (1.5 + Math.random()*6);
       }
       else{
         valor = (1 + Math.random()*3);
       }
 
-      plano.push(valor.toFixed(2));
+      plano.push(parseFloat(valor.toFixed(2)));
     }
+
+    plano.push((10 + Math.random()*20).toFixed(2));
+    plano.push((10 + Math.random()*20).toFixed(2));
+
+    plano.sort(() => Math.random() - 0.5);
 
     let boas = plano.filter(v => v >= 1.75).length;
     let entrada = (boas / 15) * 100;
@@ -279,15 +304,14 @@ function gerarTabelas(tipo) {
     `;
 
     plano.forEach(v => {
-
       let valor = parseFloat(v);
-      let classe = valor >= 1.75 ? "green" : "red";
+      let classe = "red";
 
       if (valor >= 10) {
         classe += " blink";
       }
 
-      html += `<span class="vela ${classe}">${v}x</span>`;
+      html += `<span class="vela ${classe}">${valor.toFixed(2)}x</span>`;
     });
 
     html += `</div>`;
@@ -296,7 +320,7 @@ function gerarTabelas(tipo) {
   }
 }
 
-// ⏱️ TEMPO
+// TEMPO
 function atualizarTempo() {
 
   tempo--;
@@ -304,7 +328,8 @@ function atualizarTempo() {
   let min = Math.floor(tempo / 60);
   let seg = tempo % 60;
 
-  tempo.innerText = `Tempo: ${min}:${seg<10?'0':''}${seg}`;
+  document.getElementById("tempoTexto").innerText =
+    `Tempo: ${min}:${seg<10?'0':''}${seg}`;
 
   if (tempo <= 0) {
     clearInterval(intervalo);
@@ -314,6 +339,5 @@ function atualizarTempo() {
 }
 
 </script>
-
 </body>
 </html>
